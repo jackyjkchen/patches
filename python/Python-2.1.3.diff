@@ -1,0 +1,34 @@
+Index: Modules/readline.c
+===================================================================
+--- Modules/readline.c	(版本 1)
++++ Modules/readline.c	(工作副本)
+@@ -93,7 +93,6 @@
+ 	return Py_None;
+ }
+ 
+-static int history_length = -1; /* do not truncate history by default */
+ static char doc_read_history_file[] = "\
+ read_history_file([filename]) -> None\n\
+ Load a readline history file.\n\
+Index: setup.py
+===================================================================
+--- setup.py	(版本 1)
++++ setup.py	(工作副本)
+@@ -154,7 +154,7 @@
+         # lib_dirs and inc_dirs are used to search for files;
+         # if a file is found in one of those directories, it can
+         # be assumed that no additional -I,-L directives are needed.
+-        lib_dirs = self.compiler.library_dirs + ['/lib', '/usr/lib']
++        lib_dirs = self.compiler.library_dirs + ['/lib', '/usr/lib', '/lib64', '/usr/lib64', '/usr/lib/arm-linux-gnueabihf', '/lib/arm-linux-gnueabihf']
+         inc_dirs = self.compiler.include_dirs + ['/usr/include'] 
+         exts = []
+ 
+@@ -523,7 +523,7 @@
+         
+         # Assume we haven't found any of the libraries or include files
+         tcllib = tklib = tcl_includes = tk_includes = None
+-        for version in ['8.4', '8.3', '8.2', '8.1', '8.0']:
++        for version in ['8.6', '8.5', '8.4', '8.3', '8.2', '8.1', '8.0']:
+              tklib = self.compiler.find_library_file(lib_dirs,
+                                                      'tk' + version )
+              tcllib = self.compiler.find_library_file(lib_dirs,

@@ -1,0 +1,13 @@
+Index: Modules/Setup.in
+===================================================================
+--- Modules/Setup.in	(版本 1)
++++ Modules/Setup.in	(工作副本)
+@@ -123,7 +123,7 @@
+ # it, depending on your system -- see the GNU readline instructions.
+ # It's okay for this to be a shared library, too.
+ 
+-#readline readline.c -lreadline -ltermcap
++readline readline.c -lreadline -ltermcap
+ 
+ 
+ # Modules that should always be present (non UNIX dependent):

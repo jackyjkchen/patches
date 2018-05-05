@@ -1,0 +1,202 @@
+Index: include/llvm/ADT/IntrusiveRefCntPtr.h
+===================================================================
+--- include/llvm/ADT/IntrusiveRefCntPtr.h	(版本 4)
++++ include/llvm/ADT/IntrusiveRefCntPtr.h	(工作副本)
+@@ -197,6 +197,9 @@
+   private:
+     void retain() { if (Obj) IntrusiveRefCntPtrInfo<T>::retain(Obj); }
+     void release() { if (Obj) IntrusiveRefCntPtrInfo<T>::release(Obj); }
++    
++    template <typename X>
++    friend class IntrusiveRefCntPtr;
+   };
+ 
+   template<class T, class U>
+Index: projects/compiler-rt/CMakeLists.txt
+===================================================================
+--- projects/compiler-rt/CMakeLists.txt	(版本 6)
++++ projects/compiler-rt/CMakeLists.txt	(工作副本)
+@@ -205,8 +205,7 @@
+   set(TARGET_${arch}_CFLAGS ${ARGN})
+   try_compile(CAN_TARGET_${arch} ${CMAKE_BINARY_DIR} ${SIMPLE_SOURCE}
+               COMPILE_DEFINITIONS "${TARGET_${arch}_CFLAGS}"
+-              OUTPUT_VARIABLE TARGET_${arch}_OUTPUT
+-              CMAKE_FLAGS "-DCMAKE_EXE_LINKER_FLAGS:STRING=${TARGET_${arch}_CFLAGS}")
++              OUTPUT_VARIABLE TARGET_${arch}_OUTPUT)
+   if(${CAN_TARGET_${arch}})
+     list(APPEND COMPILER_RT_SUPPORTED_ARCH ${arch})
+   elseif("${COMPILER_RT_TEST_TARGET_ARCH}" MATCHES "${arch}" OR
+Index: projects/compiler-rt/lib/tsan/CMakeLists.txt
+===================================================================
+--- projects/compiler-rt/lib/tsan/CMakeLists.txt	(版本 4)
++++ projects/compiler-rt/lib/tsan/CMakeLists.txt	(工作副本)
+@@ -103,12 +103,14 @@
+ add_dependencies(compiler-rt tsan)
+ 
+ # Build libcxx instrumented with TSan.
+-if(COMPILER_RT_HAS_LIBCXX_SOURCES AND
+-   COMPILER_RT_TEST_COMPILER_ID STREQUAL "Clang")
+-  set(LIBCXX_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/libcxx_tsan)
+-  add_custom_libcxx(libcxx_tsan ${LIBCXX_PREFIX}
+-    DEPS ${TSAN_RUNTIME_LIBRARIES}
+-    CFLAGS -fsanitize=thread)
++if(CAN_TARGET_x86_64 AND UNIX AND NOT APPLE)
++  if(COMPILER_RT_HAS_LIBCXX_SOURCES AND
++     COMPILER_RT_TEST_COMPILER_ID STREQUAL "Clang")
++    set(LIBCXX_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/libcxx_tsan)
++    add_custom_libcxx(libcxx_tsan ${LIBCXX_PREFIX}
++      DEPS ${TSAN_RUNTIME_LIBRARIES}
++      CFLAGS -fsanitize=thread)
++  endif()
+ endif()
+ 
+ if(COMPILER_RT_INCLUDE_TESTS)
+Index: projects/libcxxabi/src/cxa_default_handlers.cpp
+===================================================================
+--- projects/libcxxabi/src/cxa_default_handlers.cpp	(版本 4)
++++ projects/libcxxabi/src/cxa_default_handlers.cpp	(工作副本)
+@@ -103,7 +103,7 @@
+ {
+ 	if (func == 0)
+ 		func = default_unexpected_handler;
+-	return __sync_swap(&__cxa_unexpected_handler, func);
++	return  __atomic_exchange_n(&__cxa_unexpected_handler, func, __ATOMIC_ACQ_REL);
+ //  Using of C++11 atomics this should be rewritten
+ //  return __cxa_unexpected_handler.exchange(func, memory_order_acq_rel);
+ }
+@@ -113,7 +113,7 @@
+ {
+ 	if (func == 0)
+ 		func = default_terminate_handler;
+-	return __sync_swap(&__cxa_terminate_handler, func);
++	return __atomic_exchange_n(&__cxa_terminate_handler, func, __ATOMIC_ACQ_REL);
+ //  Using of C++11 atomics this should be rewritten
+ //  return __cxa_terminate_handler.exchange(func, memory_order_acq_rel);
+ }
+Index: projects/libcxxabi/src/cxa_handlers.cpp
+===================================================================
+--- projects/libcxxabi/src/cxa_handlers.cpp	(版本 4)
++++ projects/libcxxabi/src/cxa_handlers.cpp	(工作副本)
+@@ -109,7 +109,7 @@
+ new_handler
+ set_new_handler(new_handler handler) _NOEXCEPT
+ {
+-    return __sync_swap(&__cxa_new_handler, handler);
++    return __atomic_exchange_n(&__cxa_new_handler, handler, __ATOMIC_ACQ_REL);
+ //  Using of C++11 atomics this should be rewritten
+ //  return __cxa_new_handler.exchange(handler, memory_order_acq_rel);
+ }
+Index: projects/libcxxabi/src/cxa_personality.cpp
+===================================================================
+--- projects/libcxxabi/src/cxa_personality.cpp	(版本 6)
++++ projects/libcxxabi/src/cxa_personality.cpp	(工作副本)
+@@ -997,17 +997,48 @@
+ }
+ #else
+ 
++#if !LIBCXXABI_USE_LLVM_UNWINDER
++extern "C" _Unwind_Reason_Code __gnu_unwind_frame(_Unwind_Exception*, _Unwind_Context*);
++#endif
++
+ // Helper function to unwind one frame.
+ // ARM EHABI 7.3 and 7.4: If the personality function returns _URC_CONTINUE_UNWIND, the
+ // personality routine should update the virtual register set (VRS) according to the
+ // corresponding frame unwinding instructions (ARM EHABI 9.3.)
+-static _Unwind_Reason_Code continue_unwind(_Unwind_Context* context,
+-                                           uint32_t* unwind_opcodes,
+-                                           size_t opcode_words)
++static _Unwind_Reason_Code continue_unwind(_Unwind_Exception* unwind_exception,
++                                           _Unwind_Context* context)
+ {
++#if LIBCXXABI_USE_LLVM_UNWINDER
++    // ARM EHABI # 6.2, # 9.2
++    //
++    //  +---- ehtp
++    //  v
++    // +--------------------------------------+
++    // | +--------+--------+--------+-------+ |
++    // | |0| prel31 to __gxx_personality_v0 | |
++    // | +--------+--------+--------+-------+ |
++    // | |      N |      unwind opcodes     | |  <-- unwind_opcodes
++    // | +--------+--------+--------+-------+ |
++    // | | Word 2        unwind opcodes     | |
++    // | +--------+--------+--------+-------+ |
++    // | ...                                  |
++    // | +--------+--------+--------+-------+ |
++    // | | Word N        unwind opcodes     | |
++    // | +--------+--------+--------+-------+ |
++    // | | LSDA                             | |  <-- lsda
++    // | | ...                              | |
++    // | +--------+--------+--------+-------+ |
++    // +--------------------------------------+
++
++    uint32_t *unwind_opcodes = unwind_exception->pr_cache.ehtp + 1;
++    size_t opcode_words = ((*unwind_opcodes >> 24) & 0xff) + 1;
+     if (_Unwind_VRS_Interpret(context, unwind_opcodes, 1, opcode_words * 4) !=
+         _URC_CONTINUE_UNWIND)
+         return _URC_FAILURE;
++#else
++    if (__gnu_unwind_frame(unwind_exception, context) != _URC_OK)
++        return _URC_FAILURE;
++#endif
+     return _URC_CONTINUE_UNWIND;
+ }
+ 
+@@ -1046,34 +1077,7 @@
+     bool native_exception = (unwind_exception->exception_class & get_vendor_and_language) ==
+                             (kOurExceptionClass & get_vendor_and_language);
+ 
+-#if LIBCXXABI_ARM_EHABI
+-    // ARM EHABI # 6.2, # 9.2
+-    //
+-    //  +---- ehtp
+-    //  v
+-    // +--------------------------------------+
+-    // | +--------+--------+--------+-------+ |
+-    // | |0| prel31 to __gxx_personality_v0 | |
+-    // | +--------+--------+--------+-------+ |
+-    // | |      N |      unwind opcodes     | |  <-- UnwindData
+-    // | +--------+--------+--------+-------+ |
+-    // | | Word 2        unwind opcodes     | |
+-    // | +--------+--------+--------+-------+ |
+-    // | ...                                  |
+-    // | +--------+--------+--------+-------+ |
+-    // | | Word N        unwind opcodes     | |
+-    // | +--------+--------+--------+-------+ |
+-    // | | LSDA                             | |  <-- lsda
+-    // | | ...                              | |
+-    // | +--------+--------+--------+-------+ |
+-    // +--------------------------------------+
+ 
+-    uint32_t *UnwindData = unwind_exception->pr_cache.ehtp + 1;
+-    uint32_t FirstDataWord = *UnwindData;
+-    size_t N = ((FirstDataWord >> 24) & 0xff);
+-    size_t NDataWords = N + 1;
+-#endif
+-
+     // Copy the address of _Unwind_Control_Block to r12 so that
+     // _Unwind_GetLanguageSpecificData() and _Unwind_GetRegionStart() can
+     // return correct address.
+@@ -1093,7 +1097,7 @@
+         }
+         // Did not find the catch handler
+         if (results.reason == _URC_CONTINUE_UNWIND)
+-            return continue_unwind(context, UnwindData, NDataWords);
++            return continue_unwind(unwind_exception, context);
+         return results.reason;
+ 
+     case _US_UNWIND_FRAME_STARTING:
+@@ -1141,11 +1145,11 @@
+ 
+         // Did not find any handler
+         if (results.reason == _URC_CONTINUE_UNWIND)
+-            return continue_unwind(context, UnwindData, NDataWords);
++            return continue_unwind(unwind_exception, context);
+         return results.reason;
+ 
+     case _US_UNWIND_FRAME_RESUME:
+-        return continue_unwind(context, UnwindData, NDataWords);
++        return continue_unwind(unwind_exception, context);
+     }
+ 
+     // We were called improperly: neither a phase 1 or phase 2 search

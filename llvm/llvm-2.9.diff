@@ -1,0 +1,37 @@
+Index: tools/clang/lib/Driver/ToolChains.cpp
+===================================================================
+--- tools/clang/lib/Driver/ToolChains.cpp	(版本 1)
++++ tools/clang/lib/Driver/ToolChains.cpp	(工作副本)
+@@ -1449,10 +1449,14 @@
+       GccTriple = "i586-suse-linux";
+   }
+ 
+-  const char* GccVersions[] = {"4.5.2", "4.5.1", "4.5", "4.4.5", "4.4.4",
+-                               "4.4.3", "4.4", "4.3.4", "4.3.3", "4.3.2",
+-                               "4.3", "4.2.4", "4.2.3", "4.2.2", "4.2.1",
+-                               "4.2"};
++  const char* GccVersions[] = {"4.9.4", "4.9.3", "4.9.2", "4.9.1", "4.9", 
++                               "4.8.5", "4.8.4", "4.8.3", "4.8.2", "4.8.1", "4.8", 
++                               "4.7.4", "4.7.3", "4.7.2", "4.7.1", "4.7", 
++                               "4.6.4", "4.6.3", "4.6.2", "4.6.1", "4.6", 
++                               "4.5.4", "4.5.3", "4.5.2", "4.5.1", "4.5", 
++                               "4.4.7", "4.4.6", "4.4.5", "4.4.4", "4.4.3", "4.4", 
++                               "4.3.6", "4.3.5", "4.3.4", "4.3.3", "4.3.2", "4.3", 
++                               "4.2.4", "4.2.3", "4.2.2", "4.2.1", "4.2"};
+   std::string Base = "";
+   for (unsigned i = 0; i < sizeof(GccVersions)/sizeof(char*); ++i) {
+     std::string Suffix = GccTriple + "/" + GccVersions[i];
+Index: lib/ExecutionEngine/JIT/Intercept.cpp
+===================================================================
+--- lib/ExecutionEngine/JIT/Intercept.cpp	(版本 1)
++++ lib/ExecutionEngine/JIT/Intercept.cpp	(工作副本)
+@@ -51,7 +51,9 @@
+ #if defined(HAVE_SYS_STAT_H)
+ #include <sys/stat.h>
+ #endif
++#include <sys/types.h>
+ #include <fcntl.h>
++#include <unistd.h>
+ /* stat functions are redirecting to __xstat with a version number.  On x86-64 
+  * linking with libc_nonshared.a and -Wl,--export-dynamic doesn't make 'stat' 
+  * available as an exported symbol, so we have to add it explicitly.

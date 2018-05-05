@@ -1,0 +1,57 @@
+Index: tools/clang/lib/Driver/ToolChains.cpp
+===================================================================
+--- tools/clang/lib/Driver/ToolChains.cpp	(版本 1)
++++ tools/clang/lib/Driver/ToolChains.cpp	(工作副本)
+@@ -2345,6 +2345,22 @@
+   return true;
+ }
+ 
++/// \brief Helper to add an extra variant path for an (Ubuntu) multilib
++/// libstdc++ installation.
++/*static*/ bool Linux::addLibStdCXXIncludePaths(Twine Base, Twine Suffix,
++                                                Twine TargetArchDir,
++                                                Twine MultiLibSuffix,
++                                                const ArgList &DriverArgs,
++                                                ArgStringList &CC1Args) {
++  if (!addLibStdCXXIncludePaths(Base+Suffix, TargetArchDir + MultiLibSuffix,
++                                DriverArgs, CC1Args))
++    return false;
++
++  addSystemInclude(DriverArgs, CC1Args, Base + "/" + TargetArchDir + Suffix
++                   + MultiLibSuffix);
++  return true;
++}
++
+ void Linux::AddClangCXXStdlibIncludeArgs(const ArgList &DriverArgs,
+                                          ArgStringList &CC1Args) const {
+   if (DriverArgs.hasArg(options::OPT_nostdlibinc) ||
+@@ -2372,6 +2388,13 @@
+   StringRef Version = GCCInstallation.getVersion().Text;
+   StringRef TripleStr = GCCInstallation.getTriple().str();
+ 
++  if (addLibStdCXXIncludePaths(LibDir.str() + "/../include", 
++                               "/c++/" + Version.str(),
++                               TripleStr,
++                               GCCInstallation.getMultiarchSuffix(),
++                               DriverArgs, CC1Args))
++    return;
++
+   const std::string IncludePathCandidates[] = {
+     LibDir.str() + "/../include/c++/" + Version.str(),
+     // Gentoo is weird and places its headers inside the GCC install, so if the
+Index: tools/clang/lib/Driver/ToolChains.h
+===================================================================
+--- tools/clang/lib/Driver/ToolChains.h	(版本 1)
++++ tools/clang/lib/Driver/ToolChains.h	(工作副本)
+@@ -518,6 +518,11 @@
+   std::vector<std::string> ExtraOpts;
+ 
+ private:
++  static bool addLibStdCXXIncludePaths(Twine Base, Twine Suffix,
++                                       Twine TargetArchDir,
++                                       Twine MultiLibSuffix,
++                                       const ArgList &DriverArgs,
++                                       ArgStringList &CC1Args);
+   static bool addLibStdCXXIncludePaths(Twine Base, Twine TargetArchDir,
+                                        const ArgList &DriverArgs,
+                                        ArgStringList &CC1Args);

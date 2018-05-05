@@ -1,0 +1,77 @@
+Index: Modules/_ctypes/libffi/src/arm/sysv.S
+===================================================================
+--- Modules/_ctypes/libffi/src/arm/sysv.S	(版本 1)
++++ Modules/_ctypes/libffi/src/arm/sysv.S	(工作副本)
+@@ -189,7 +189,7 @@
+ 
+ @ return INT
+ 	cmp	r3, #FFI_TYPE_INT
+-#ifdef __SOFTFP__
++#if defined(__SOFTFP__) || defined(__ARM_EABI__)
+ 	cmpne	r3, #FFI_TYPE_FLOAT
+ #endif
+ 	streq	r0, [r2]
+@@ -197,12 +197,12 @@
+ 
+ 	@ return INT64
+ 	cmp	r3, #FFI_TYPE_SINT64
+-#ifdef __SOFTFP__
++#if defined(__SOFTFP__) || defined(__ARM_EABI__)
+ 	cmpne	r3, #FFI_TYPE_DOUBLE
+ #endif
+ 	stmeqia	r2, {r0, r1}
+ 
+-#ifndef __SOFTFP__
++#if !defined(__SOFTFP__) && !defined(__ARM_EABI__)
+ 	beq	LSYM(Lepilogue)
+ 
+ @ return FLOAT
+@@ -245,7 +245,7 @@
+ 	beq	.Lretint
+ 
+ 	cmp	r0, #FFI_TYPE_FLOAT
+-#ifdef __SOFTFP__
++#if defined(__SOFTFP__) || defined(__ARM_EABI__)
+ 	beq	.Lretint
+ #else
+ 	beq	.Lretfloat
+@@ -252,7 +252,7 @@
+ #endif
+ 
+ 	cmp	r0, #FFI_TYPE_DOUBLE
+-#ifdef __SOFTFP__
++#if defined(__SOFTFP__) || defined(__ARM_EABI__)
+ 	beq	.Lretlonglong
+ #else
+ 	beq	.Lretdouble
+@@ -259,7 +259,7 @@
+ #endif
+ 
+ 	cmp	r0, #FFI_TYPE_LONGDOUBLE
+-#ifdef __SOFTFP__
++#if defined(__SOFTFP__) || defined(__ARM_EABI__)
+ 	beq	.Lretlonglong
+ #else
+ 	beq	.Lretlongdouble
+@@ -278,7 +278,7 @@
+ 	ldr	r1, [sp, #4]
+ 	b	.Lclosure_epilogue
+ 
+-#ifndef __SOFTFP__
++#if !defined(__SOFTFP__) && !defined(__ARM_EABI__)
+ .Lretfloat:
+ 	ldfs	f0, [sp]
+ 	b	.Lclosure_epilogue
+Index: setup.py
+===================================================================
+--- setup.py	(版本 1)
++++ setup.py	(工作副本)
+@@ -416,7 +416,7 @@
+         # if a file is found in one of those directories, it can
+         # be assumed that no additional -I,-L directives are needed.
+         lib_dirs = self.compiler.library_dirs + [
+-            '/lib64', '/usr/lib64',
++            '/lib64', '/usr/lib64', '/usr/lib/arm-linux-gnueabihf', '/lib/arm-linux-gnueabihf', 
+             '/lib', '/usr/lib',
+             ]
+         inc_dirs = self.compiler.include_dirs + ['/usr/include']

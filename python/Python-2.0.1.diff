@@ -1,0 +1,28 @@
+Index: Modules/Setup.in
+===================================================================
+--- Modules/Setup.in	(版本 1)
++++ Modules/Setup.in	(工作副本)
+@@ -121,7 +121,7 @@
+ # it, depending on your system -- see the GNU readline instructions.
+ # It's okay for this to be a shared library, too.
+ 
+-#readline readline.c -lreadline -ltermcap
++readline readline.c -lreadline -ltermcap
+ 
+ 
+ # Modules that should always be present (non UNIX dependent):
+Index: Modules/readline.c
+===================================================================
+--- Modules/readline.c	(版本 1)
++++ Modules/readline.c	(工作副本)
+@@ -28,8 +28,8 @@
+ #include <readline/readline.h> /* You may need to add an -I option to Setup */
+ 
+ extern int rl_parse_and_bind(char *);
+-extern int rl_read_init_file(char *);
+-extern int rl_insert_text(char *);
++//extern int rl_read_init_file(char *);
++//extern int rl_insert_text(char *);
+ extern int rl_bind_key(int, Function *);
+ extern int rl_bind_key_in_map(int, Function *, Keymap);
+ extern int rl_initialize(void);

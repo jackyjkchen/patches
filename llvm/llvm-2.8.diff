@@ -1,0 +1,14 @@
+Index: lib/ExecutionEngine/JIT/Intercept.cpp
+===================================================================
+--- lib/ExecutionEngine/JIT/Intercept.cpp	(版本 4)
++++ lib/ExecutionEngine/JIT/Intercept.cpp	(工作副本)
+@@ -51,7 +51,9 @@
+ #if defined(HAVE_SYS_STAT_H)
+ #include <sys/stat.h>
+ #endif
++#include <sys/types.h>
+ #include <fcntl.h>
++#include <unistd.h>
+ /* stat functions are redirecting to __xstat with a version number.  On x86-64 
+  * linking with libc_nonshared.a and -Wl,--export-dynamic doesn't make 'stat' 
+  * available as an exported symbol, so we have to add it explicitly.

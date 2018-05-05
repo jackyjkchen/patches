@@ -1,0 +1,42 @@
+Index: tools/clang/lib/Driver/ToolChains.cpp
+===================================================================
+--- tools/clang/lib/Driver/ToolChains.cpp	(版本 1)
++++ tools/clang/lib/Driver/ToolChains.cpp	(工作副本)
+@@ -2011,6 +2011,22 @@
+   return true;
+ }
+ 
++/// \brief Helper to add an extra variant path for an (Ubuntu) multilib
++/// libstdc++ installation.
++static bool addLibStdCXXIncludePaths(Twine Base, Twine Suffix,
++                                                Twine TargetArchDir,
++                                                Twine MultiLibSuffix,
++                                                const ArgList &DriverArgs,
++                                                ArgStringList &CC1Args) {
++  if (!addLibStdCXXIncludePaths(Base+Suffix, TargetArchDir + MultiLibSuffix,
++                                DriverArgs, CC1Args))
++    return false;
++
++  addSystemInclude(DriverArgs, CC1Args, Base + "/" + TargetArchDir + Suffix
++                   + MultiLibSuffix);
++  return true;
++}
++
+ void Linux::AddClangCXXStdlibIncludeArgs(const ArgList &DriverArgs,
+                                          ArgStringList &CC1Args) const {
+   if (DriverArgs.hasArg(options::OPT_nostdlibinc) ||
+@@ -2063,6 +2079,14 @@
+   StringRef LibDir = GCCInstallation.getParentLibPath();
+   StringRef InstallDir = GCCInstallation.getInstallPath();
+   StringRef Version = GCCInstallation.getVersion();
++
++  if (addLibStdCXXIncludePaths(LibDir + "/../include", 
++                               "/c++/" + Version,
++                               GCCInstallation.getTriple().str(),
++                               Suffix,
++                               DriverArgs, CC1Args))
++    return;
++  
+   if (!addLibStdCXXIncludePaths(LibDir + "/../include/c++/" + Version,
+                                 GCCInstallation.getTriple() + Suffix,
+                                 DriverArgs, CC1Args)) {

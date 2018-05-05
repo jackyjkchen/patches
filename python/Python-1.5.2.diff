@@ -1,0 +1,53 @@
+Index: Modules/Setup.in
+===================================================================
+--- Modules/Setup.in	(版本 1)
++++ Modules/Setup.in	(工作副本)
+@@ -122,7 +122,7 @@
+ # it, depending on your system -- see the GNU readline instructions.
+ # It's okay for this to be a shared library, too.
+ 
+-#readline readline.c -lreadline -ltermcap
++readline readline.c -lreadline -ltermcap
+ 
+ 
+ # Modules that should always be present (non UNIX dependent):
+Index: Objects/fileobject.c
+===================================================================
+--- Objects/fileobject.c	(版本 1)
++++ Objects/fileobject.c	(工作副本)
+@@ -587,7 +587,7 @@
+ */
+ 
+ static PyObject *
+-getline(f, n)
++py_getline(f, n)
+ 	PyFileObject *f;
+ 	int n;
+ {
+@@ -709,7 +709,7 @@
+ 	}
+ 	if (((PyFileObject*)f)->f_fp == NULL)
+ 		return err_closed();
+-	return getline((PyFileObject *)f, n);
++	return py_getline((PyFileObject *)f, n);
+ }
+ 
+ /* Python method */
+@@ -729,7 +729,7 @@
+ 		return PyString_FromString("");
+ 	if (n < 0)
+ 		n = 0;
+-	return getline(f, n);
++	return py_getline(f, n);
+ }
+ 
+ static PyObject *
+@@ -823,7 +823,7 @@
+ 			goto error;
+ 		if (sizehint > 0) {
+ 			/* Need to complete the last line */
+-			PyObject *rest = getline(f, 0);
++			PyObject *rest = py_getline(f, 0);
+ 			if (rest == NULL) {
+ 				Py_DECREF(line);
+ 				goto error;

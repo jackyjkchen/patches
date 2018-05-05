@@ -1,0 +1,106 @@
+Index: gcc/config/alpha/linux.h
+===================================================================
+--- gcc/config/alpha/linux.h	(版本 1)
++++ gcc/config/alpha/linux.h	(工作副本)
+@@ -74,7 +74,7 @@
+     else if (pc_[1] == 0x201f015f)	/* lda $0,NR_rt_sigreturn */	\
+       {									\
+ 	struct rt_sigframe {						\
+-	  struct siginfo info;						\
++	  siginfo_t info;						\
+ 	  struct ucontext uc;						\
+ 	} *rt_ = (CONTEXT)->cfa;					\
+ 	sc_ = &rt_->uc.uc_mcontext;					\
+Index: gcc/config/i386/linux.h
+===================================================================
+--- gcc/config/i386/linux.h	(版本 1)
++++ gcc/config/i386/linux.h	(工作副本)
+@@ -255,9 +255,9 @@
+       {									\
+ 	struct rt_sigframe {						\
+ 	  int sig;							\
+-	  struct siginfo *pinfo;					\
++	  siginfo_t *pinfo;					\
+ 	  void *puc;							\
+-	  struct siginfo info;						\
++	  siginfo_t info;						\
+ 	  struct ucontext uc;						\
+ 	} *rt_ = (CONTEXT)->cfa;					\
+ 	sc_ = (struct sigcontext *) &rt_->uc.uc_mcontext;		\
+Index: libstdc++-v3/config/c_locale_gnu.cc
+===================================================================
+--- libstdc++-v3/config/c_locale_gnu.cc	(版本 1)
++++ libstdc++-v3/config/c_locale_gnu.cc	(工作副本)
+@@ -37,6 +37,12 @@
+ #include <stdexcept>
+ #include <langinfo.h>
+ 
++#if __GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ > 2)
++extern "C" __typeof(nl_langinfo_l) __nl_langinfo_l;
++extern "C" __typeof(newlocale) __newlocale;
++extern "C" __typeof(freelocale) __freelocale;
++#endif // GLIBC 2.3 and later
++
+ namespace std 
+ {
+   void
+Index: libstdc++-v3/config/os/gnu-linux/bits/ctype_noninline.h
+===================================================================
+--- libstdc++-v3/config/os/gnu-linux/bits/ctype_noninline.h	(版本 1)
++++ libstdc++-v3/config/os/gnu-linux/bits/ctype_noninline.h	(工作副本)
+@@ -32,18 +32,32 @@
+ //
+   
+ // Information as gleaned from /usr/include/ctype.h
+-
++/*
+ #if _GLIBCPP_USE_SHADOW_HEADERS
+   using _C_legacy::__ctype_toupper;
+   using _C_legacy::__ctype_tolower;
+   using _C_legacy::__ctype_b;
+ #endif
+-
++*/
+   ctype<char>::ctype(const mask* __table, bool __del, size_t __refs) : 
+-  __ctype_abstract_base<char>(__refs), _M_del(__table != 0 && __del), 
+-  _M_toupper(__ctype_toupper), _M_tolower(__ctype_tolower),
+-  _M_ctable(__ctype_b), _M_table(__table == 0 ? _M_ctable : __table) 
+-  { }
++  __ctype_abstract_base<char>(__refs), _M_del(__table != 0 && __del) 
++  {
++          char* __old=strdup(setlocale(LC_CTYPE, NULL));
++              setlocale(LC_CTYPE, "C");
++#if __GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ > 2)
++                  _M_toupper = *__ctype_toupper_loc();
++                      _M_tolower = *__ctype_tolower_loc();
++                      _M_ctable = *__ctype_b_loc();
++                          _M_table = __table ? __table : *__ctype_b_loc();
++#else
++                              _M_toupper = __ctype_toupper;
++                                  _M_tolower = __ctype_tolower;
++                                  _M_ctable = __ctype_b;
++                                      _M_table = __table ? __table : __ctype_b;
++#endif
++                                          setlocale(LC_CTYPE, __old);
++                                              free(__old);
++  }
+ 
+   char
+   ctype<char>::do_toupper(char __c) const
+Index: libstdc++-v3/include/bits/locale_facets.h
+===================================================================
+--- libstdc++-v3/include/bits/locale_facets.h	(版本 1)
++++ libstdc++-v3/include/bits/locale_facets.h	(工作副本)
+@@ -241,9 +241,9 @@
+     private:
+       // Data Members:
+       bool 		       _M_del;
+-      __to_type const& 	       _M_toupper;
+-      __to_type const& 	       _M_tolower;
+-      const mask* const&       _M_ctable;
++      __to_type  	       _M_toupper;
++      __to_type  	       _M_tolower;
++      const mask*        _M_ctable;
+       const mask*              _M_table;
+       
+     public:

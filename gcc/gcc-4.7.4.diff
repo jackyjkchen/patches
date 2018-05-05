@@ -1,0 +1,33 @@
+Index: gcc/config/arm/linux-eabi.h
+===================================================================
+--- gcc/config/arm/linux-eabi.h	(版本 6)
++++ gcc/config/arm/linux-eabi.h	(工作副本)
+@@ -62,8 +62,15 @@
+ /* Use ld-linux.so.3 so that it will be possible to run "classic"
+    GNU/Linux binaries on an EABI system.  */
+ #undef  GLIBC_DYNAMIC_LINKER
+-#define GLIBC_DYNAMIC_LINKER "/lib/ld-linux.so.3"
++#define GLIBC_DYNAMIC_LINKER_SOFT_FLOAT "/lib/ld-linux.so.3"
++#define GLIBC_DYNAMIC_LINKER_HARD_FLOAT "/lib/ld-linux-armhf.so.3"
++#define GLIBC_DYNAMIC_LINKER_DEFAULT GLIBC_DYNAMIC_LINKER_SOFT_FLOAT
+ 
++#define GLIBC_DYNAMIC_LINKER \
++   "%{mfloat-abi=hard:" GLIBC_DYNAMIC_LINKER_HARD_FLOAT "} \
++    %{mfloat-abi=soft*:" GLIBC_DYNAMIC_LINKER_SOFT_FLOAT "} \
++    %{!mfloat-abi=*:" GLIBC_DYNAMIC_LINKER_DEFAULT "}"
++
+ /* At this point, bpabi.h will have clobbered LINK_SPEC.  We want to
+    use the GNU/Linux version, not the generic BPABI version.  */
+ #undef  LINK_SPEC
+Index: gcc/cp/pt.c
+===================================================================
+--- gcc/cp/pt.c	(版本 4)
++++ gcc/cp/pt.c	(工作副本)
+@@ -18191,7 +18191,6 @@
+      if the variable has a constant value the referring expression can
+      take advantage of that fact.  */
+   if (TREE_CODE (d) == VAR_DECL
+-      || decl_function_context (d)
+       || DECL_DECLARED_CONSTEXPR_P (d))
+     defer_ok = 0;
+ 

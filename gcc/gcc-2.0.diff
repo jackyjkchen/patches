@@ -1,0 +1,181 @@
+Index: config/i386gstabs.h
+===================================================================
+--- config/i386gstabs.h	(版本 0)
++++ config/i386gstabs.h	(工作副本)
+@@ -0,0 +1,9 @@
++#include "i386gas.h"
++
++/* We do not want to output SDB debugging information.  */
++
++#undef SDB_DEBUGGING_INFO
++
++/* We want to output DBX debugging information.  */
++
++#define DBX_DEBUGGING_INFO
+Index: config/i386linux.h
+===================================================================
+--- config/i386linux.h	(版本 0)
++++ config/i386linux.h	(工作副本)
+@@ -0,0 +1,84 @@
++/* Definitions for Intel 386 running Linux
++ * Copyright (C) 1992 Free Software Foundation, Inc.
++ *
++ * Written by H.J. Lu (hlu@eecs.wsu.edu)
++ *
++ * Linux is a POSIX.1 compatible UNIX clone for i386, which uses GNU
++ * stuffs as the native stuffs.
++ */
++
++#if 0	/* The FSF has fixed the known bugs. But ....... */
++
++/* Linux has a hacked gas 1.38.1, which can handle repz, repnz
++ * and fildll.
++ */
++
++#define GOOD_GAS
++
++#endif
++
++/* This is tested by i386gas.h.  */
++#define YES_UNDERSCORES
++
++#include "i386gstabs.h"
++
++/* Specify predefined symbols in preprocessor.  */
++
++#undef CPP_PREDEFINES
++#define CPP_PREDEFINES "-Dunix -Di386 -Dlinux"
++
++#undef SIZE_TYPE
++#define SIZE_TYPE "unsigned int"
++
++#undef PTRDIFF_TYPE
++#define PTRDIFF_TYPE "int"
++
++#undef WCHAR_TYPE
++#define WCHAR_TYPE "long int"
++
++#undef WCHAR_TYPE_SIZE
++#define WCHAR_TYPE_SIZE BITS_PER_WORD
++
++#undef HAVE_ATEXIT
++#define HAVE_ATEXIT
++
++/* Linux uses ctype from glibc.a. I am not sure how complete it is.
++ * For now, we play safe. It may change later.
++ */
++#if 0
++#undef MULTIBYTE_CHARS
++#define MULTIBYTE_CHARS	1
++#endif
++
++#undef LIB_SPEC
++#define LIB_SPEC "%{g*:-lg} %{!g*:%{!p:%{!pg:-lc}}%{p:-lgmon -lc_p}%{pg:-lgmon -lc_p}}"
++
++
++#undef STARTFILE_SPEC
++#undef GPLUSPLUS_INCLUDE_DIR
++
++#ifdef CROSS_COMPILE
++
++/*
++ * For cross-compile, we just need to search `$(tooldir)/lib'
++ */
++
++#define STARTFILE_SPEC  \
++  "%{g*:crt0.o%s -static} %{!g*:%{pg:gcrt0.o%s -static} %{!pg:%{p:gcrt0.o%s -static} %{!p:crt0.o%s %{!static:%{nojump:-nojump}} %{static:-static}}}} -L"TOOLDIR"/lib"
++
++/*
++ *The cross-compile uses this.
++ */
++#define GPLUSPLUS_INCLUDE_DIR TOOLDIR"/g++-include"
++
++#else
++
++#define STARTFILE_SPEC  \
++  "%{g*:crt0.o%s -static} %{!g*:%{pg:gcrt0.o%s -static} %{!pg:%{p:gcrt0.o%s -static} %{!p:crt0.o%s %{!static:%{nojump:-nojump}} %{static:-static}}}}"
++
++/*
++ *The native Linux system uses this.
++ */
++#define GPLUSPLUS_INCLUDE_DIR "/usr/g++-include"
++
++#endif
+Index: config/x-linux
+===================================================================
+--- config/x-linux	(版本 0)
++++ config/x-linux	(工作副本)
+@@ -0,0 +1,5 @@
++X_CFLAGS=-DPOSIX
++# we are native.
++prefix=/usr
++# no object c, why bother.
++LANGUAGES = c c++ proto
+Index: config/xm-linux.h
+===================================================================
+--- config/xm-linux.h	(版本 0)
++++ config/xm-linux.h	(工作副本)
+@@ -0,0 +1,23 @@
++/* Configuration for GCC for Intel i386 running Linux.
++ *
++ * Written by H.J. Lu (hlu@eecs.wsu.edu)
++ */
++
++#include "xm-i386.h"
++#include "xm-svr3.h"
++
++#undef BSTRING
++#define BSTRING
++#undef bcmp
++#undef bcopy
++#undef bzero
++#undef index
++#undef rindex
++
++#if 0 /* These conflict with stdlib.h in protoize, it is said,
++	 and there's no evidence they are actually needed.  */
++#undef malloc(n)
++#define malloc(n)	malloc ((n) ? (n) : 1)
++#undef calloc(n,e)
++#define calloc(n,e)	calloc (((n) ? (n) : 1), ((e) ? (e) : 1))
++#endif
+Index: config.sub
+===================================================================
+--- config.sub	(版本 1)
++++ config.sub	(工作副本)
+@@ -77,7 +77,7 @@
+ case $basic_machine in
+ 	# Recognize the basic CPU types with without company name.
+ 	# Some are omitted here because they have special meanings below.
+-	tahoe | i386 | i860 | m68k | m68000 | m88k | ns32k | arm | pyramid \
++	tahoe | i[34]86 | i860 | m68k | m68000 | m88k | ns32k | arm | pyramid \
+ 		| tron | a29k | 580 | i960 | h8300 | hppa)
+ 		basic_machine=$basic_machine-unknown
+ 		;;
+@@ -431,7 +431,7 @@
+ 	      | -vms* | -sco* | -esix* | -isc* | -aix* | -sunos* | -hpux* \
+ 	      | -unos* | -osf* | -luna* | -dgux* | -solari* | -sym* | -amix* \
+ 	      | -amigados* | -msdos* | -unicos* \
+-	      | -nindy* | -vxworks* | -ebmon* | -hds* | -m88kbcs*)
++	      | -nindy* | -vxworks* | -ebmon* | -hds* | -m88kbcs* | -linux* )
+ 		;;
+ 	-newsos*)
+ 		os=-bsd
+Index: configure
+===================================================================
+--- configure	(版本 1)
++++ configure	(工作副本)
+@@ -246,6 +246,13 @@
+ 		xm_file=xm-i386sun.h
+ 		tm_file=i386sun.h
+ 		;;
++	i[34]86-*-linux*)               # Intel 80386's running Linux
++		cpu_type=i386
++		xm_file=xm-linux.h
++		xmake_file=x-linux
++		tm_file=i386linux.h
++		broken_install=yes
++		;;
+ 	i386-*-sysv4*)			# Intel 80386's running system V.4
+ 		xm_file=xm-i38v4.h
+ 		xmake_file=x-i386v4
