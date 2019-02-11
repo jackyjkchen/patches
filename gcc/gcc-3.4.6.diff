@@ -1,21 +1,30 @@
-Index: gcc/config/alpha/linux.h
+Index: gcc/config/ia64/linux.h
 ===================================================================
---- gcc/config/alpha/linux.h	(版本 1)
-+++ gcc/config/alpha/linux.h	(工作副本)
-@@ -94,7 +94,7 @@
-     else if (pc_[1] == 0x201f015f)	/* lda $0,NR_rt_sigreturn */	\
-       {									\
- 	struct rt_sigframe {						\
--	  struct siginfo info;						\
-+	  siginfo_t info;						\
- 	  struct ucontext uc;						\
- 	} *rt_ = (CONTEXT)->cfa;					\
- 	sc_ = &rt_->uc.uc_mcontext;					\
-Index: gcc/config/i386/linux.h
+--- gcc/config/ia64/linux.h	(版本 1)
++++ gcc/config/ia64/linux.h	(工作副本)
+@@ -77,7 +77,7 @@
+       struct sigframe {							\
+ 	char scratch[16];						\
+ 	unsigned long sig_number;					\
+-	struct siginfo *info;						\
++	siginfo_t *info;						\
+ 	struct sigcontext *sc;						\
+       } *frame_ = (struct sigframe *)(CONTEXT)->psp;			\
+       struct sigcontext *sc_ = frame_->sc;				\
+@@ -150,7 +150,7 @@
+       struct sigframe {							\
+ 	char scratch[16];						\
+ 	unsigned long sig_number;					\
+-	struct siginfo *info;						\
++	siginfo_t *info;						\
+ 	struct sigcontext *sc;						\
+       } *frame_ = (struct sigframe *)(CONTEXT)->psp;			\
+       struct sigcontext *sc_ = frame_->sc;				\
+Index: gcc/config/i386/linux64.h
 ===================================================================
---- gcc/config/i386/linux.h	(版本 1)
-+++ gcc/config/i386/linux.h	(工作副本)
-@@ -235,9 +235,9 @@
+--- gcc/config/i386/linux64.h	(版本 1)
++++ gcc/config/i386/linux64.h	(工作副本)
+@@ -157,9 +157,9 @@
        {									\
  	struct rt_sigframe {						\
  	  int sig;							\
@@ -27,11 +36,11 @@ Index: gcc/config/i386/linux.h
  	  struct ucontext uc;						\
  	} *rt_ = (CONTEXT)->cfa;					\
  	sc_ = (struct sigcontext *) &rt_->uc.uc_mcontext;		\
-Index: gcc/config/i386/linux64.h
+Index: gcc/config/i386/linux.h
 ===================================================================
---- gcc/config/i386/linux64.h	(版本 32)
-+++ gcc/config/i386/linux64.h	(工作副本)
-@@ -157,9 +157,9 @@
+--- gcc/config/i386/linux.h	(版本 1)
++++ gcc/config/i386/linux.h	(工作副本)
+@@ -235,9 +235,9 @@
        {									\
  	struct rt_sigframe {						\
  	  int sig;							\
@@ -56,41 +65,6 @@ Index: gcc/config/i386/t-linux64
  
  LIBGCC = stmp-multilib
  INSTALL_LIBGCC = install-multilib
-Index: gcc/config/ia64/linux.h
-===================================================================
---- gcc/config/ia64/linux.h	(版本 1)
-+++ gcc/config/ia64/linux.h	(工作副本)
-@@ -77,7 +77,7 @@
-       struct sigframe {							\
- 	char scratch[16];						\
- 	unsigned long sig_number;					\
--	struct siginfo *info;						\
-+	siginfo_t *info;						\
- 	struct sigcontext *sc;						\
-       } *frame_ = (struct sigframe *)(CONTEXT)->psp;			\
-       struct sigcontext *sc_ = frame_->sc;				\
-@@ -150,7 +150,7 @@
-       struct sigframe {							\
- 	char scratch[16];						\
- 	unsigned long sig_number;					\
--	struct siginfo *info;						\
-+	siginfo_t *info;						\
- 	struct sigcontext *sc;						\
-       } *frame_ = (struct sigframe *)(CONTEXT)->psp;			\
-       struct sigcontext *sc_ = frame_->sc;				\
-Index: gcc/config/mips/linux.h
-===================================================================
---- gcc/config/mips/linux.h	(版本 1)
-+++ gcc/config/mips/linux.h	(工作副本)
-@@ -228,7 +228,7 @@
-       {                                                              \
-         struct rt_sigframe {                                         \
-           u_int32_t  trampoline[2];                                \
--          struct siginfo info;                                       \
-+          siginfo_t info;                                       \
-           _sig_ucontext_t uc;                                        \
-         } *rt_ = (CONTEXT)->ra;                                      \
-         sc_ = &rt_->uc.uc_mcontext;                                  \
 Index: gcc/config/sh/linux.h
 ===================================================================
 --- gcc/config/sh/linux.h	(版本 1)
@@ -104,3 +78,159 @@ Index: gcc/config/sh/linux.h
  	  struct ucontext uc;						\
  	} *rt_ = (CONTEXT)->cfa;					\
  	sc_ = (struct sigcontext *) &rt_->uc.uc_mcontext;		\
+Index: gcc/config/alpha/linux.h
+===================================================================
+--- gcc/config/alpha/linux.h	(版本 1)
++++ gcc/config/alpha/linux.h	(工作副本)
+@@ -94,7 +94,7 @@
+     else if (pc_[1] == 0x201f015f)	/* lda $0,NR_rt_sigreturn */	\
+       {									\
+ 	struct rt_sigframe {						\
+-	  struct siginfo info;						\
++	  siginfo_t info;						\
+ 	  struct ucontext uc;						\
+ 	} *rt_ = (CONTEXT)->cfa;					\
+ 	sc_ = &rt_->uc.uc_mcontext;					\
+Index: gcc/config/mips/linux.h
+===================================================================
+--- gcc/config/mips/linux.h	(版本 1)
++++ gcc/config/mips/linux.h	(工作副本)
+@@ -228,7 +228,7 @@
+       {                                                              \
+         struct rt_sigframe {                                         \
+           u_int32_t  trampoline[2];                                \
+-          struct siginfo info;                                       \
++          siginfo_t info;                                       \
+           _sig_ucontext_t uc;                                        \
+         } *rt_ = (CONTEXT)->ra;                                      \
+         sc_ = &rt_->uc.uc_mcontext;                                  \
+Index: gcc/ada/a-exexda.adb
+===================================================================
+--- gcc/ada/a-exexda.adb	(版本 1)
++++ gcc/ada/a-exexda.adb	(工作副本)
+@@ -344,7 +344,6 @@
+       return Info;
+    end Exception_Information;
+ 
+-
+    -------------------------
+    -- Set_Exception_C_Msg --
+    -------------------------
+Index: gcc/ada/a-exextr.adb
+===================================================================
+--- gcc/ada/a-exextr.adb	(版本 1)
++++ gcc/ada/a-exextr.adb	(工作副本)
+@@ -214,7 +214,6 @@
+       end loop;
+    end To_Stderr;
+ 
+-
+    ------------------------------------
+    -- Handling GNAT.Exception_Traces --
+    ------------------------------------
+Index: gcc/ada/s-traent.ads
+===================================================================
+--- gcc/ada/s-traent.ads	(版本 1)
++++ gcc/ada/s-traent.ads	(工作副本)
+@@ -58,5 +58,3 @@
+    --  Returns an entry representing a frame for a call instruction at PC.
+ 
+ end System.Traceback_Entries;
+-
+-
+Index: gcc/c-parse.y
+===================================================================
+--- gcc/c-parse.y	(版本 1)
++++ gcc/c-parse.y	(工作副本)
+@@ -1647,7 +1647,7 @@
+ 
+ structsp_attr:
+ 	  struct_head identifier '{'
+-		{ $$ = start_struct (RECORD_TYPE, $2);
++		{ $<ttype>$ = start_struct (RECORD_TYPE, $2);
+ 		  /* Start scope of tag before parsing components.  */
+ 		}
+ 	  component_decl_list '}' maybe_attribute
+@@ -1658,7 +1658,7 @@
+ 				      nreverse ($3), chainon ($1, $5));
+ 		}
+ 	| union_head identifier '{'
+-		{ $$ = start_struct (UNION_TYPE, $2); }
++		{ $<ttype>$ = start_struct (UNION_TYPE, $2); }
+ 	  component_decl_list '}' maybe_attribute
+ 		{ $$ = finish_struct ($<ttype>4, nreverse ($5),
+ 				      chainon ($1, $7)); }
+@@ -1667,12 +1667,12 @@
+ 				      nreverse ($3), chainon ($1, $5));
+ 		}
+ 	| enum_head identifier '{'
+-		{ $$ = start_enum ($2); }
++		{ $<ttype>$ = start_enum ($2); }
+ 	  enumlist maybecomma_warn '}' maybe_attribute
+ 		{ $$ = finish_enum ($<ttype>4, nreverse ($5),
+ 				    chainon ($1, $8)); }
+ 	| enum_head '{'
+-		{ $$ = start_enum (NULL_TREE); }
++		{ $<ttype>$ = start_enum (NULL_TREE); }
+ 	  enumlist maybecomma_warn '}' maybe_attribute
+ 		{ $$ = finish_enum ($<ttype>3, nreverse ($4),
+ 				    chainon ($1, $7)); }
+Index: gcc/objc/objc-parse.y
+===================================================================
+--- gcc/objc/objc-parse.y	(版本 1)
++++ gcc/objc/objc-parse.y	(工作副本)
+@@ -1699,7 +1699,7 @@
+ 
+ structsp_attr:
+ 	  struct_head identifier '{'
+-		{ $$ = start_struct (RECORD_TYPE, $2);
++		{ $<ttype>$ = start_struct (RECORD_TYPE, $2);
+ 		  /* Start scope of tag before parsing components.  */
+ 		}
+ 	  component_decl_list '}' maybe_attribute
+@@ -1710,7 +1710,7 @@
+ 				      nreverse ($3), chainon ($1, $5));
+ 		}
+ 	| union_head identifier '{'
+-		{ $$ = start_struct (UNION_TYPE, $2); }
++		{ $<ttype>$ = start_struct (UNION_TYPE, $2); }
+ 	  component_decl_list '}' maybe_attribute
+ 		{ $$ = finish_struct ($<ttype>4, nreverse ($5),
+ 				      chainon ($1, $7)); }
+@@ -1719,12 +1719,12 @@
+ 				      nreverse ($3), chainon ($1, $5));
+ 		}
+ 	| enum_head identifier '{'
+-		{ $$ = start_enum ($2); }
++		{ $<ttype>$ = start_enum ($2); }
+ 	  enumlist maybecomma_warn '}' maybe_attribute
+ 		{ $$ = finish_enum ($<ttype>4, nreverse ($5),
+ 				    chainon ($1, $8)); }
+ 	| enum_head '{'
+-		{ $$ = start_enum (NULL_TREE); }
++		{ $<ttype>$ = start_enum (NULL_TREE); }
+ 	  enumlist maybecomma_warn '}' maybe_attribute
+ 		{ $$ = finish_enum ($<ttype>3, nreverse ($4),
+ 				    chainon ($1, $7)); }
+Index: libf2c/configure
+===================================================================
+--- libf2c/configure	(版本 1)
++++ libf2c/configure	(工作副本)
+@@ -1193,7 +1193,7 @@
+   if { (eval echo configure:1194: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
+     for file in conftest.*; do
+       case $file in
+-      *.c | *.o | *.obj) ;;
++      *.$ac_ext | *.c | *.o | *.obj) ;;
+       *) ac_cv_exeext=`echo $file | sed -e s/conftest//` ;;
+       esac
+     done
+@@ -2931,7 +2931,7 @@
+       fi
+     fi
+ 
+-    cd $ac_popdir
++    cd "$ac_popdir"
+   done
+ fi
+ 

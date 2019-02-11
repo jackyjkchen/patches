@@ -44,16 +44,18 @@ Index: setup.py
 ===================================================================
 --- setup.py	(版本 1)
 +++ setup.py	(工作副本)
-@@ -296,7 +296,7 @@
-         # if a file is found in one of those directories, it can
+@@ -297,6 +297,10 @@
          # be assumed that no additional -I,-L directives are needed.
          lib_dirs = self.compiler.library_dirs + [
--            '/lib64', '/usr/lib64',
-+            '/lib64', '/usr/lib64', '/usr/lib/arm-linux-gnueabihf', '/lib/arm-linux-gnueabihf',
+             '/lib64', '/usr/lib64',
++            '/usr/lib/aarch64-linux-gnu', '/lib/aarch64-linux-gnu',
++            '/usr/lib/arm-linux-gnueabihf', '/lib/arm-linux-gnueabihf',
++            '/usr/lib/mips64el-linux-gnu', '/lib/mips64el-linux-gnu',
++            '/usr/lib/mipsel-linux-gnu', '/lib/mipsel-linux-gnu',
              '/lib', '/usr/lib',
              ]
          inc_dirs = self.compiler.include_dirs + ['/usr/include']
-@@ -1224,7 +1224,7 @@
+@@ -1224,7 +1228,7 @@
          # The versions with dots are used on Unix, and the versions without
          # dots on Windows, for detection by cygwin.
          tcllib = tklib = tcl_includes = tk_includes = None

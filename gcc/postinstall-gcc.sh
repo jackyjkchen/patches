@@ -21,7 +21,7 @@ function makelink() {
     mv -v $e-$SHORTVER $ARCH-x$e-$VER
     rm -v $ARCH-$e-$SHORTVER
     echo "#!/bin/sh" > $e-$SHORTVER
-    if [ x$SHORTARCH == x"x86_64" ]; then
+    if [[ x$SHORTARCH == x"x86_64" ]]; then
         if [[ x$VER > x"4.8" ]]; then
             echo "$ARCH-x$e-$VER -Wl,-rpath,$LIBPATH/$ARCH/$VER/:$LIBPATH/$ARCH/$VER/32/:$LIBPATH/$ARCH/$VER/x32/ \"\$@\"" >> $e-$SHORTVER
         else
@@ -39,17 +39,23 @@ ln -v cpp-$SHORTVER $ARCH-cpp-$SHORTVER
 rm -v c++-$SHORTVER $ARCH-c++-$SHORTVER $ARCH-gcc-$VER
 makelink "gcc"
 ln -v gcc-$SHORTVER $ARCH-gcc-$VER
-makelink "g++"
-ln -v g++-$SHORTVER c++-$SHORTVER
-ln -v g++-$SHORTVER $ARCH-c++-$SHORTVER
+if [[ x$SHORTARCH != x"mipsel" || x$VER > x"3.4" ]]; then
+    makelink "g++"
+    ln -v g++-$SHORTVER c++-$SHORTVER
+    ln -v g++-$SHORTVER $ARCH-c++-$SHORTVER
+fi
 if [[ x$VER < x"3.5" ]]; then
-    makelink "g77" 
+    if [[ x$SHORTARCH != x"mipsel" || x$VER > x"3.4" ]]; then
+        makelink "g77" 
+    fi
 fi
 if [[ x$VER > x"4.0" ]]; then
     makelink "gfortran"
 fi
 if [[ x$VER > x"4.7" ]]; then
-    makelink "gccgo"
+    if [[ x$SHORTARCH == x"x86_64" ]]; then
+        makelink "gccgo"
+    fi
 fi
 
 if [[ x$SHORTVER > x"5.0" ]]; then
